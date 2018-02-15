@@ -1,6 +1,6 @@
 $(function() {
   	queue()
-      .defer(d3.csv,"data/census_withCentroids_incomeOnly.csv")
+      .defer(d3.csv,"data/census_withCentroids.csv")
       .await(dataDidLoad);
   })
  
@@ -38,6 +38,7 @@ function dataDidLoad(error,censusData){
                 var geoIds = []
                 var filter = featureList.reduce(function(memo, feature) {
                         memo.push(feature.properties["AFFGEOID"]);
+                        
                         geoIds.push(feature.properties["AFFGEOID"])
                         return memo;
                     }, ['in', "AFFGEOID"]);
@@ -179,13 +180,16 @@ function drawPath(data,geoids,map){
     var pathData = []
     var pathDataId = []
     for(var g in geoids){
-        var gid = geoids[g].replace("1500000US","15000US")
-        var coords = [parseFloat(data[gid].lng),parseFloat(data[gid].lat)]
-        pathData.push(coords)
-        pathDataId.push([gid,coords])
+       
+            var gid = geoids[g].replace("1500000US","15000US")
+        if(data[gid]!=undefined){
+            var coords = [parseFloat(data[gid].lng),parseFloat(data[gid].lat)]
+            pathData.push(coords)
+            pathDataId.push([gid,coords])
+        }
     }
     var distances = getDistances(pathDataId)
-    drawChart(distances, data,geoids,"SE_T057_001")
+    drawChart(distances,data,geoids,"SE_T057_001")
     
     map.addLayer({
     "id": "route_"+lineCount,
@@ -225,7 +229,12 @@ function drawChart(distances,data,geoids,column){
 
     var g = svg.append("g").attr("transform", "translate(" + margin*2 + "," + margin + ")");
   //  console.log(geoids)
-    var max = d3.max(geoids.map(function(d){return parseFloat(data[d.replace("1500000US","15000US")][column])}))
+    var max = d3.max(geoids.map(function(d){
+        if(data[d.replace("1500000US","15000US")]!=undefined){
+          //  console.log(data[d.replace("1500000US","15000US")])
+            return parseFloat(data[d.replace("1500000US","15000US")][column])
+        }
+    }))
 //    console.log(max)
 var y = d3.scaleLinear()
     .domain([0,max])
@@ -242,7 +251,11 @@ var line = d3.line()
         return x(distances[id])
     })
     .y(function(d,i){
-        return y(data[d.replace("1500000US","15000US")][column])
+        if(data[d.replace("1500000US","15000US")]==undefined){
+            return 0
+        }else{
+            return y(data[d.replace("1500000US","15000US")][column])
+        }
     })
     
     g.append("path")
@@ -258,6 +271,9 @@ var line = d3.line()
       .append("circle")
       .attr("fill",colors[lineCount])
       .attr("cy",function(d){
+          if(data[d.replace("1500000US","15000US")]==undefined){
+              return 0
+          }
           return y(data[d.replace("1500000US","15000US")][column])
       })
       .attr("cx",function(d,i){
@@ -314,7 +330,7 @@ function getFeatures(e,map,featureList){
 function addPolygons(map){
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG_filtered.geojson'
+        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
     })
     map.addLayer({
         'id': 'blockGroup',
@@ -325,7 +341,7 @@ function addPolygons(map){
         "layout":{},
         "paint":{
         'fill-outline-color':'rgba(0,0,200, 0)',
-        'fill-color': 'rgba(200, 100, 240, 0)'
+        'fill-color': 'rgba(0,0,0, .05)'
         }
     })
     map.addLayer({
