@@ -325,7 +325,7 @@ function addPolygons(map){
         "layout":{},
         "paint":{
         'fill-outline-color':'rgba(0,0,200, 0)',
-        'fill-color': 'rgba(200, 100, 240, 1)'
+        'fill-color': 'rgba(200, 100, 240, 0)'
         }
     })
     map.addLayer({
