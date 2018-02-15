@@ -59,7 +59,7 @@ function dataDidLoad(error,censusData){
     })
 }
 function drawMouse(mouseList,map){
-    console.log(mouseList)
+    //console.log(mouseList)
     map.addLayer({
     "id": "mouse_"+lineCount,
             "type": "line",
@@ -314,7 +314,7 @@ function getFeatures(e,map,featureList){
 function addPolygons(map){
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYork_filteredGeojson.geojson'
+        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG_filtered.geojson'
     })
     map.addLayer({
         'id': 'blockGroup',
