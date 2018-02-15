@@ -5,25 +5,19 @@ $(function() {
   })
  
 var lineCount = 0
- var colors = ["#76cfc0",
-"#7142ce",
-"#c147c3",
-"#6adb69",
-"#d7488b",
-"#5a9344",
-"#605ab1",
-"#c4a843",
-"#c184cd",
-"#d87c34",
-"#70a0c9",
-"#cd413a",
-"#c4d19b",
-"#923b5a",
-"#4c684b",
-"#d2aac3",
-"#7b5230",
-"#5a526f",
-"#cf927e"]
+ var colors = ["#dd8d64",
+"#4bf094",
+"#e7b02c",
+"#50a633",
+"#1bcb78",
+"#e28327",
+"#4f7f32",
+"#d64728",
+"#37a6a8",
+"#d26140",
+"#339762",
+"#46a78d",
+"#8de3be"]
   function dataDidLoad(error,censusData){
       var formatted = convertDataToDict(censusData)
 
