@@ -1,26 +1,14 @@
 $(function() {
   	queue()
-      .defer(d3.csv,"data/census_withCentroids_incomeOnly.csv")
+      .defer(d3.csv,"data/census_withCentroids.csv")
       .await(dataDidLoad);
   })
  
 var lineCount = 0
- var colors = ["#dd8d64",
-"#4bf094",
-"#e7b02c",
-"#50a633",
-"#1bcb78",
-"#e28327",
-"#4f7f32",
-"#d64728",
-"#37a6a8",
-"#d26140",
-"#339762",
-"#46a78d",
-"#8de3be"]
-  function dataDidLoad(error,censusData){
-      var formatted = convertDataToDict(censusData)
+var colors = ["#dd8d64","#4bf094","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f32","#d64728","#37a6a8","#d26140","#339762","#46a78d","#8de3be"]
 
+function dataDidLoad(error,censusData){
+    var formatted = convertDataToDict(censusData)
     var newYork = [-73.9,40.7127837]
     var boston = [-71.043787,42.361212]
     mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
@@ -28,17 +16,15 @@ var lineCount = 0
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdkrxmwl008v2to3t0e8g0k0',
         center: newYork,
-        //interactive: false,
         zoom:12
     });
     map["dragPan"].disable()
     map.addControl(new mapboxgl.NavigationControl());
     
     map.on('load', function() {
-                
         addPolygons(map)
-            var featureList = []
-        
+        var featureList = []
+        var mouseList = []
         var canvas = map.getCanvasContainer()
         var down = false;
         $(document).mousedown(function() {
@@ -47,8 +33,6 @@ var lineCount = 0
             down = false;  
         });
         map.on('mouseup',function(){
-//            console.log(geoidList.length)
-//            console.log(geoidList)
             lineCount+=1
             if(featureList.length>3){
                 var geoIds = []
@@ -57,27 +41,103 @@ var lineCount = 0
                         geoIds.push(feature.properties["AFFGEOID"])
                         return memo;
                     }, ['in', "AFFGEOID"]);
-          
-                    map.setFilter("bg-highlighted", filter);              
-                    drawPath(formatted,geoIds,map)
-                
-            }
-        //    else{
-        //        console.log("please draw a line with more areas")
-        //    }
-            //refresh saved ids 
-           featureList = []
+                map.setFilter("bg-highlighted", filter);              
+                drawPath(formatted,geoIds,map)
+                drawMouse(mouseList,map)
+            } 
+        featureList = []
+        mouseList = []
         })
          map.on('mousemove', function (e) {
              if(down!=false){
                  $('html,body').css('cursor','crosshair');
                  var geoids = []
                  getFeatures(e,map,featureList)
-                 
+                 recordMouse(map,mouseList,e)
              }
          })
     })
- 
+}
+function drawMouse(mouseList,map){
+    console.log(mouseList)
+    map.addLayer({
+    "id": "mouse_"+lineCount,
+            "type": "line",
+            "source": {
+                "type": "geojson",
+                "data": {
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": mouseList
+                    }
+                }
+            },
+            "layout": {
+                "line-join": "round",
+                "line-cap": "round"
+            },
+            "paint": {
+                "line-color": colors[lineCount],
+                "line-width": 1
+            }
+    })
+    var start = mouseList[0]
+    var end =  mouseList[mouseList.length-1]
+    map.addSource("points_"+lineCount,{
+        "type": "geojson",
+        "data": {
+            "type": "FeatureCollection",
+            "features": [{
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": start
+                },
+                "properties":{
+                    "title":"A"
+                }
+            },{
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates":end
+                },
+                "properties":{
+                    "title":"B"
+                }
+            }]
+        }
+    });
+    map.addLayer({
+            "id": "start_"+lineCount,
+            "type": "circle",
+            "source": "points_"+lineCount,
+            "paint": {
+                "circle-radius": 8,
+                "circle-color": colors[lineCount],
+            },
+            "filter": ["==", "$type", "Point"],
+        });
+        map.addLayer({
+        "id":"start_label_"+lineCount,
+        "type":"symbol",
+        "source": "points_"+lineCount,
+        "layout":{
+            "text-field":"{title}",
+            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+            "text-offset": [0, 0.6],
+            "text-anchor": "top",
+        },
+        "paint":{
+            "text-color":colors[lineCount]
+        }
+    })
+}
+function recordMouse(map,mouseList,e){
+    mouseList.push([e.lngLat.lng,e.lngLat.lat])
+    return mouseList
 }
 function getDistance(lat1, lon1, lat2, lon2, unit) {
 	var radlat1 = Math.PI * lat1/180
@@ -146,70 +206,10 @@ function drawPath(data,geoids,map){
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": colors[lineCount],
-                "line-width": 2
+                "line-color": "#555",//colors[lineCount],
+                "line-width": .5
             }
     })
-    console.log(pathData[0])
-    var start = pathData[0]
-    var end =  pathData[pathData.length-1]
-    map.addSource("points_"+lineCount,{
-        "type": "geojson",
-        "data": {
-            "type": "FeatureCollection",
-            "features": [{
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": start
-                },
-                "properties":{
-                    "title":"A"
-                }
-            },{
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates":end
-                },
-                "properties":{
-                    "title":"B"
-                }
-            }]
-        }
-    });
-    map.addLayer({
-            "id": "start_"+lineCount,
-            "type": "circle",
-            "source": "points_"+lineCount,
-            "paint": {
-                "circle-radius": 8,
-                "circle-color": colors[lineCount],
-            },
-            
-            "filter": ["==", "$type", "Point"],
-        });
-    
-    
-    
-    map.addLayer({
-        "id":"start_label_"+lineCount,
-        "type":"symbol",
-        "source": "points_"+lineCount,
-        "layout":{
-            "text-field":"{title}",
-            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-            "text-offset": [0, 0.6],
-            "text-anchor": "top",
-          //  "text-color":colors[lineCount]
-        },
-        "paint":{
-            "text-color":colors[lineCount]
-        }
-    })
-    
-    
-    
 }
 
 function drawChart(distances,data,geoids,column){
@@ -281,7 +281,6 @@ var line = d3.line()
      
 
 }
-
 function convertDataToDict(censusData){
     var formatted = {}
     for(var i in censusData){
@@ -334,7 +333,7 @@ function addPolygons(map){
             "type": "fill",
             "source": "blockGroupGeojson",
             "paint": {
-                "fill-outline-color": "rgba(0,0,0,1)",
+                "fill-outline-color": "rgba(255,255,255,1)",
                 "fill-color": "rgba(0,0,0,.1)",
             },
             "filter": ["in", "FIPS", ""]
