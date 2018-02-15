@@ -33,28 +33,38 @@
 	<link rel="stylesheet" href="static/bootstrap-3.1.1-dist/css/bootstrap.min.css">
 	<script src="static/javascripts/jquery-ui.min.js"></script>
 <style>
+  body{
+    cursor:url(pen.png),auto;
+    
+  }
   #map{
     position:absolute;
     top:0px;
     height:100%;
     width:100%;
+    cursor:url(pen.png),auto;
+    
   }
   #features{
     position:absolute;
     left:20px;
     top:20px;
     width:300px;
+    cursor:url(pen.png),auto;
+    
   }
   #charts{
-    position:absolute;
-    right:0px;
+    position:fixed;
+    right:50px;
     padding:20px;
-    top:0px;
+    top:5px;
     background-color:rgba(255,255,255,.8);
-    border:3px solid rgba(255,255,255,1);
+    border:1px solid rgba(0,0,0,1);
     margin:10px;
-    height:100%;
-    width:500px;
+    width:400px;
+    overflow:auto;
+    cursor:url(pen.png),auto;
+    
   }
   .mapbox-gl-draw_ctrl-draw > button {
     border-color:rgba(0,0,0,0.9);
@@ -68,7 +78,7 @@
 
 <div id='map'></div>
 <div id='features'></div>
-<div id='charts'></div>
+<div id='charts'>Click and drag mouse to draw on map</div>
 
 <!--
 <div id='scale'>
