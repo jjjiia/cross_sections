@@ -1,6 +1,6 @@
 $(function() {
   	queue()
-      .defer(d3.csv,"data/census_withCentroids.csv")
+      .defer(d3.csv,"data/census_withCentroids_incomeOnly.csv")
       .await(dataDidLoad);
   })
  
@@ -314,7 +314,7 @@ function getFeatures(e,map,featureList){
 function addPolygons(map){
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG_filtered.geojson'
+        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
     })
     map.addLayer({
         'id': 'blockGroup',
@@ -325,7 +325,7 @@ function addPolygons(map){
         "layout":{},
         "paint":{
         'fill-outline-color':'rgba(0,0,200, 0)',
-        'fill-color': 'rgba(200, 100, 240, 0)'
+        'fill-color': 'rgba(200, 100, 240, 1)'
         }
     })
     map.addLayer({
