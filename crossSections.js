@@ -314,7 +314,7 @@ function getFeatures(e,map,featureList){
 function addPolygons(map){
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
+        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYork_filteredGeojson.geojson'
     })
     map.addLayer({
         'id': 'blockGroup',
