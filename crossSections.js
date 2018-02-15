@@ -27,7 +27,7 @@ var lineCount = 0
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdkrxmwl008v2to3t0e8g0k0',
-        center: boston,
+        center: newYork,
         //interactive: false,
         zoom:12
     });
@@ -315,7 +315,7 @@ function getFeatures(e,map,featureList){
 function addPolygons(map){
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/MA_BG.geojson'
+        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
     })
     map.addLayer({
         'id': 'blockGroup',
