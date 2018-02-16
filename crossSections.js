@@ -1,3 +1,4 @@
+//https://www.mapbox.com/mapbox-gl-js/example/polygon-popup-on-click/
 $(function() {
   	queue()
       .defer(d3.csv,"data/census_withCentroids.csv")
@@ -80,7 +81,7 @@ function drawMouse(mouseList,map){
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": colors[lineCount],
+                "line-color": "#000",
                 "line-width": 1
             }
     })
@@ -121,20 +122,20 @@ function drawMouse(mouseList,map){
             },
             "filter": ["==", "$type", "Point"],
         });
-        map.addLayer({
-        "id":"start_label_"+lineCount,
-        "type":"symbol",
-        "source": "points_"+lineCount,
-        "layout":{
-            "text-field":"{title}",
-            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-            "text-offset": [0, 0.6],
-            "text-anchor": "top",
-        },
-        "paint":{
-            "text-color":colors[lineCount]
-        }
-    })
+    map.addLayer({
+    "id":"start_label_"+lineCount,
+    "type":"symbol",
+    "source": "points_"+lineCount,
+    "layout":{
+        "text-field":"{title}",
+        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        "text-offset": [0, 0.6],
+        "text-anchor": "top",
+    },
+    "paint":{
+        "text-color":colors[lineCount]
+    }
+})
 }
 function recordMouse(map,mouseList,e){
     mouseList.push([e.lngLat.lng,e.lngLat.lat])
@@ -210,10 +211,34 @@ function drawPath(data,geoids,map){
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": "#555",//colors[lineCount],
-                "line-width": .5
+                "line-color": colors[lineCount],//colors[lineCount],
+                "line-width": 1
             }
     })
+    
+    
+    var features = []
+    for(var i in pathData){
+        features.push({
+            "type":"Feature",
+            "geometry":{"type":"Point","coordinates":pathData[i]},
+            "properties":{"title":"centroid_"+lineCount+"_"+i}
+        })
+    }
+    var centroidsSource = {"type":"geojson","data":{"type":"FeatureCollection","features":features}}
+    console.log(centroidsSource)
+    map.addSource('centroids_'+lineCount,centroidsSource)
+    
+    map.addLayer({
+            "id": "centroids_"+lineCount,
+            "type": "circle",
+            "source": "centroids_"+lineCount,
+            "paint": {
+                "circle-radius": 2,
+                "circle-color": colors[lineCount],
+            },
+            "filter": ["==", "$type", "Point"],
+        });  
 }
 
 function drawChart(distances,data,geoids,column){
@@ -349,8 +374,8 @@ function addPolygons(map){
             "type": "fill",
             "source": "blockGroupGeojson",
             "paint": {
-                "fill-outline-color": "rgba(255,255,255,1)",
-                "fill-color": "rgba(0,0,0,.1)",
+                "fill-outline-color": "rgba(0,0,0,.5)",
+                "fill-color": "rgba(255,255,255,.8)",
             },
             "filter": ["in", "FIPS", ""]
         })
