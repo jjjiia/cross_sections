@@ -32,25 +32,21 @@
 	<link rel="stylesheet" href="static/stylesheets/jquery-ui.css" />
 	<link rel="stylesheet" href="static/bootstrap-3.1.1-dist/css/bootstrap.min.css">
 	<script src="static/javascripts/jquery-ui.min.js"></script>
+	<script src="static/javascripts/tooltip.js"></script>
 <style>
   body{
-    cursor:url(pen.png),auto;
-    
   }
   #map{
     position:absolute;
     top:0px;
     height:100%;
-    width:100%;
-    cursor:url(pen.png),auto;
-    
+    width:100%;    
   }
   #features{
     position:absolute;
     left:20px;
     top:20px;
     width:300px;
-    cursor:url(pen.png),auto;
     
   }
   #charts{
@@ -63,14 +59,23 @@
     margin:10px;
     width:400px;
     overflow:auto;
-    cursor:url(pen.png),auto;
-    
+    height:95%;
+    cursor:pointer;
   }
   .mapbox-gl-draw_ctrl-draw > button {
     border-color:rgba(0,0,0,0.9);
     color:rgba(255,255,255,0.5);
     width:30px;
     height:30px;
+  }
+  .d3-tip {
+    line-height: 1;
+    padding: 6px;
+    background: rgba(255,255,255, 0.8);
+    color: #000;
+    border:1px solid black;
+    border-radius: 4px;
+    font-size: 12px;
   }
 </style>
 </head>

@@ -35,9 +35,19 @@ function dataDidLoad(error,censusData){
         });
         map.on('mouseup',function(){
             lineCount+=1
+            //$('html,body').css('cursor','default');
+          
+           var filteredFeatures = []
+            for(var g in featureList){
+                    var gid = featureList[g].properties.AFFGEOID.replace("1500000US","15000US")
+                if(formatted[gid]!=undefined && formatted[gid]!=0){
+                    filteredFeatures.push(featureList[g])
+                }
+            }
+          
             if(featureList.length>3){
                 var geoIds = []
-                var filter = featureList.reduce(function(memo, feature) {
+                var filter = filteredFeatures.reduce(function(memo, feature) {
                         memo.push(feature.properties["AFFGEOID"]);
                         
                         geoIds.push(feature.properties["AFFGEOID"])
@@ -52,7 +62,7 @@ function dataDidLoad(error,censusData){
         })
          map.on('mousemove', function (e) {
              if(down!=false){
-                 $('html,body').css('cursor','crosshair');
+                $('html,body').css('cursor','crosshair');
                  var geoids = []
                  getFeatures(e,map,featureList)
                  recordMouse(map,mouseList,e)
@@ -117,8 +127,8 @@ function drawMouse(mouseList,map){
             "type": "circle",
             "source": "points_"+lineCount,
             "paint": {
-                "circle-radius": 8,
-                "circle-color": colors[lineCount],
+                "circle-radius": 3,
+                "circle-color": colors[lineCount%(colors.length-1)],
             },
             "filter": ["==", "$type", "Point"],
         });
@@ -133,7 +143,7 @@ function drawMouse(mouseList,map){
         "text-anchor": "top",
     },
     "paint":{
-        "text-color":colors[lineCount]
+        "text-color":colors[lineCount%(colors.length-1)]
     }
 })
 }
@@ -181,16 +191,15 @@ function drawPath(data,geoids,map){
     var pathData = []
     var pathDataId = []
     for(var g in geoids){
-       
             var gid = geoids[g].replace("1500000US","15000US")
-        if(data[gid]!=undefined){
+        if(data[gid]!=undefined && data[gid]!=0){
             var coords = [parseFloat(data[gid].lng),parseFloat(data[gid].lat)]
             pathData.push(coords)
             pathDataId.push([gid,coords])
         }
     }
     var distances = getDistances(pathDataId)
-    drawChart(distances,data,geoids,"SE_T057_001")
+    drawChart(distances,data,geoids,"SE_T057_001",map)
     
     map.addLayer({
     "id": "route_"+lineCount,
@@ -211,7 +220,7 @@ function drawPath(data,geoids,map){
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": colors[lineCount],//colors[lineCount],
+                "line-color": colors[lineCount%(colors.length-1)],
                 "line-width": 1
             }
     })
@@ -226,7 +235,7 @@ function drawPath(data,geoids,map){
         })
     }
     var centroidsSource = {"type":"geojson","data":{"type":"FeatureCollection","features":features}}
-    console.log(centroidsSource)
+    //console.log(centroidsSource)
     map.addSource('centroids_'+lineCount,centroidsSource)
     
     map.addLayer({
@@ -235,22 +244,60 @@ function drawPath(data,geoids,map){
             "source": "centroids_"+lineCount,
             "paint": {
                 "circle-radius": 2,
-                "circle-color": colors[lineCount],
+                "circle-color": colors[lineCount%(colors.length-1)],
             },
             "filter": ["==", "$type", "Point"],
         });  
 }
 
-function drawChart(distances,data,geoids,column){
+function drawChart(distances,data,geoids,column,map){
+    map.on('click', 'blockgroup', function (e) {
+           new mapboxgl.Popup()
+               .setLngLat(e.lngLat)
+               .setHTML(e.features[0].properties.name)
+               .addTo(map);
+               console.log(e)
+       });
+    
 //    d3.selectAll("#charts svg").remove()
     var margin = 30
     var height = 80
-    var width = 200
-    var svg = d3.select("#charts").append("svg").attr("width",width+margin*3).attr("height",height+margin*2)
+    var width = 250
+    var svg = d3.select("#charts").append("svg").attr("width",width+margin*3).attr("height",height+margin*2).attr("class","chart_"+lineCount)
     svg.append("text").text("Median Household Income").attr("x",10).attr("y",20)
     svg.append("text").text(Math.round(distances.total*100)/100+" mi").attr("x",width/2+margin).attr("y",height+margin)
-    svg.append("text").text("A").attr("x",margin*2).attr("y",height+margin).style("fill",colors[lineCount])
-    svg.append("text").text("B").attr("x",margin*2+width).attr("y",height+margin).style("fill",colors[lineCount])
+    svg.append("text").text("A").attr("x",margin*2).attr("y",height+margin).style("fill",colors[lineCount%(colors.length-1)])
+    svg.append("text").text("B").attr("x",margin*2+width).attr("y",height+margin).style("fill",colors[lineCount%(colors.length-1)])
+
+
+
+    svg.append("circle").attr("cx",margin*2+width).attr("cy",10).attr("r",8).style("stroke","#000").attr("fill","#fff").attr("class","chart_"+lineCount)
+    svg.append("text").html("&#10005").attr("x",margin*2+width-5).attr("y",15).style("fill","#000").attr("class","chart_"+lineCount)
+    .on("click",function(){
+        var className = d3.select(this).attr("class")
+        var lineClass = className.split("_")[1]
+        d3.select("."+className).remove()
+        map.removeLayer("centroids_"+lineClass)
+        map.removeLayer("route_"+lineClass)
+        map.removeLayer("start_"+lineClass)
+        map.removeLayer("start_label_"+lineClass)
+        map.removeLayer("mouse_"+lineClass)
+        map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
+        
+        
+    })
+
+    var filteredData = []
+    
+    for(var geoid in geoids){
+        var gid = geoids[geoid].replace("1500000US","15000US")
+        if(data[gid]!=undefined){
+            var value = data[gid][column]
+            if(value>0){
+                filteredData.push([gid,value])
+            }   
+        }
+    }
 
     var g = svg.append("g").attr("transform", "translate(" + margin*2 + "," + margin + ")");
   //  console.log(geoids)
@@ -260,65 +307,99 @@ function drawChart(distances,data,geoids,column){
             return parseFloat(data[d.replace("1500000US","15000US")][column])
         }
     }))
-//    console.log(max)
-var y = d3.scaleLinear()
-    .domain([0,max])
-    .rangeRound([height-10, 0]);
-var x = d3.scaleLinear()
-    .domain([0,distances.total])
-    .range([0,width])
-var barWidth = (width-10)/geoids.length
-//y.domain(d3.extent(data, function(d) { return d[column]; }));
+    //    console.log(max)
+    var y = d3.scaleLinear()
+        .domain([0,max])
+        .rangeRound([height-10, 0]);
+    var x = d3.scaleLinear()
+        .domain([0,distances.total])
+        .range([0,width])
+    var barWidth = (width-10)/geoids.length
+    //y.domain(d3.extent(data, function(d) { return d[column]; }));
 
-var line = d3.line()
-    .x(function(d,i){ 
-        var id = d.replace("1500000US","15000US")
-        return x(distances[id])
-    })
-    .y(function(d,i){
-        if(data[d.replace("1500000US","15000US")]==undefined){
-            return 0
-        }else{
-            return y(data[d.replace("1500000US","15000US")][column])
-        }
-    })
+    var line = d3.line()
+        .x(function(d,i){ 
+            //var id = d.replace("1500000US","15000US")
+            return x(distances[d[0]])
+            //return x(distances[id])
+        })
+        .y(function(d,i){
+                return y(d[1])
+        })
+        g.append("path")
+            .datum(filteredData)
+            .attr("fill", "none")
+            .attr("stroke",colors[lineCount%(colors.length-1)])
+            .attr("stroke-linejoin", "round")
+            .attr("d",line)
     
-    g.append("path")
-        .datum(geoids)
-        .attr("fill", "none")
-        .attr("stroke",colors[lineCount])
-        .attr("stroke-linejoin", "round")
-        .attr("d",line)
-    
-      g.selectAll("circle")
-      .data(geoids)
-      .enter()
-      .append("circle")
-      .attr("fill",colors[lineCount])
-      .attr("cy",function(d){
-          if(data[d.replace("1500000US","15000US")]==undefined){
-              return 0
-          }
-          return y(data[d.replace("1500000US","15000US")][column])
-      })
-      .attr("cx",function(d,i){
-        var id = d.replace("1500000US","15000US")
-            return x(distances[id])
-      })
-      .attr('r',2)
-      .on("mouseover",function(d){
-          console.log(d)
-      })
- g.append("g")
-      .call(d3.axisLeft(y).ticks(4))
-    .append("text")
-      .attr("fill", "#000")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -60)
-      .attr("x", -50)
-      .attr("dy", "0.71em")
-      .attr("text-anchor", "middle")
-      .text("Income ($)");
+      var tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .offset([-8, 0])
+        .html(function(d) { return "$"+d[1]; });
+      svg.call(tool_tip);
+
+      g.selectAll("circle .rollover")
+          .data(filteredData)
+          .enter()
+          .append("circle")
+          .attr("fill","red")
+          .attr("opacity",0)
+          .attr("cy",function(d){
+              return y(d[1])
+          })
+          .attr("class",function(d){
+              return "rollover rollover_"+d[0]})
+          .attr("cx",function(d,i){
+            return x(distances[d[0]])
+          })
+          .attr('r',7)
+          .on('mouseover', function(d){
+              tool_tip.html("$"+d[1])
+              tool_tip.show()
+              d3.select(this).attr("opacity",.6)
+              map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", d[0].replace("15000US","1500000US")]);
+          })
+          .on('mouseout', function(d){
+              d3.select(this).attr("opacity",0)
+              map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", ""]);
+              tool_tip.hide()
+          });
+          
+      g.selectAll("circle .first")
+          .data(filteredData)
+          .enter()
+          .append("circle")
+          .attr("fill",colors[lineCount%(colors.length-1)])
+          .attr("cy",function(d){
+              return y(d[1])
+          })
+          .attr("cx",function(d,i){
+            return x(distances[d[0]])
+          })
+          .attr("class",function(d){return "_"+d[0]})
+          .attr('r',3)
+          .on('mouseover', function(d){
+              tool_tip.html("$"+d[1])
+              tool_tip.show()
+              d3.select(this).attr("opacity",.6)
+              map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", d[0].replace("15000US","1500000US")]);
+          })
+          .on('mouseout', function(d){
+              d3.select(this).attr("opacity",0)
+              map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", ""]);
+              tool_tip.hide()
+          });
+     g.append("g")
+          .call(d3.axisLeft(y).ticks(4))
+        .append("text")
+          .attr("fill", "#000")
+          .attr("transform", "rotate(-90)")
+          .attr("y", -60)
+          .attr("x", -50)
+          .attr("dy", "0.71em")
+          .attr("text-anchor", "middle")
+          .text("Income ($)");
      
 
 }
@@ -379,15 +460,45 @@ function addPolygons(map){
             },
             "filter": ["in", "FIPS", ""]
         })
-}
-function drawLine(map){
-    var draw = new MapboxDraw({
-        displayControlsDefault: false,        
-        controls: {
-            polygon: true,
-            trash: true
-        },
-    });
+        map.addLayer({
+            "id": "bg-hover-highlight",
+                "type": "fill",
+            "source": "blockGroupGeojson",
+                "layout": {},
+                "paint": {
+                    "fill-color": "red",
+                    "fill-opacity": .6
+                },
+                "filter": ["==", "name", ""]
+            });
+        map.addLayer({
+            "id": "bg-hover",
+                "type": "fill",
+            "source": "blockGroupGeojson",
+                "layout": {},
+                "paint": {
+                    "fill-color": "red",
+                    "fill-opacity": .2
+                },
+                "filter": ["==", "name", ""]
+            });
+            map.on("mousemove", "blockGroup", function(e) {
+                map.setFilter("bg-hover", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
+            });
+            map.on("mouseleave", "blockGroup", function() {
+                map.setFilter("bg-hover", ["==",  "AFFGEOID",""]);
+            });
+            
+            map.on("mousemove", "bg-highlighted", function(e) {
+                    map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
+                    var formattedId = e.features[0].properties[ "AFFGEOID"].replace("1500000US","15000US")
+                    d3.selectAll(".rollover_"+ formattedId).attr("opacity",.6)
+                });
 
-    map.addControl(draw);   
+                // Reset the state-fills-hover layer's filter when the mouse leaves the layer.
+            map.on("mouseleave", "bg-highlighted", function() {
+                map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
+                d3.selectAll(".rollover").attr("opacity",0)
+            });
+   
 }
