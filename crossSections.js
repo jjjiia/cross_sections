@@ -28,7 +28,7 @@ function dataDidLoad(error,censusData){
     }), "top-left");
    // map.addControl(new mapboxgl.NavigationControl(),"top-left");
     map.on('load', function() {
-        
+        d3.select("#mapboxgl-ctrl-bottom-right").remove()
         d3.select("#toggle").on("click",function(){
             if(pan == true){
                 console.log(pan)
