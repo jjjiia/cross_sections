@@ -7,6 +7,7 @@ $(function() {
  
 var lineCount = 0
 var colors = ["#dd8d64","#4bf094","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f32","#d64728","#37a6a8","#d26140","#339762","#46a78d","#8de3be"]
+    var  pan =false
 
 function dataDidLoad(error,censusData){
     var formatted = convertDataToDict(censusData)
@@ -17,12 +18,34 @@ function dataDidLoad(error,censusData){
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdkrxmwl008v2to3t0e8g0k0',
         center: newYork,
-        zoom:12
+        zoom:11
     });
     map["dragPan"].disable()
-    map.addControl(new mapboxgl.NavigationControl());
     
+//    map["dragPan"].disable()
+    map.addControl(new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken
+    }), "top-left");
+   // map.addControl(new mapboxgl.NavigationControl(),"top-left");
     map.on('load', function() {
+        
+        d3.select("#toggle").on("click",function(){
+            if(pan == true){
+                console.log(pan)
+                d3.select("#toggle").html("Enable Panning")
+                map["dragPan"].disable()
+                pan = false
+            }
+            else if(pan == false){
+                console.log(pan)
+                d3.select("#toggle").html("Enable Drawing")
+                map["dragPan"].enable()
+                pan=true
+            }
+        })
+        
+        
+        
         addPolygons(map)
         var featureList = []
         var mouseList = []
@@ -434,60 +457,71 @@ function getFeatures(e,map,featureList){
         return featureList
 }
 function addPolygons(map){
+  
+    
+    
     map.addSource('blockGroupGeojson',{
         "type":"geojson",
         "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
     })
-    map.addLayer({
-        'id': 'blockGroup',
-        'type': 'fill',
-        'maxzoom':22,
-        'minzoom':0,
-        'source': "blockGroupGeojson",        
-        "layout":{},
-        "paint":{
-        'fill-outline-color':'rgba(0,0,200, 0)',
-        'fill-color': 'rgba(0,0,0, .05)'
-        }
-    })
-    map.addLayer({
-            "id": "bg-highlighted",
-            "type": "fill",
-            "source": "blockGroupGeojson",
-            "paint": {
-                "fill-outline-color": "rgba(0,0,0,.5)",
-                "fill-color": "rgba(255,255,255,.8)",
-            },
-            "filter": ["in", "FIPS", ""]
-        })
-        map.addLayer({
-            "id": "bg-hover-highlight",
-                "type": "fill",
-            "source": "blockGroupGeojson",
-                "layout": {},
-                "paint": {
-                    "fill-color": "red",
-                    "fill-opacity": .6
-                },
-                "filter": ["==", "name", ""]
-            });
-        map.addLayer({
-            "id": "bg-hover",
-                "type": "fill",
-            "source": "blockGroupGeojson",
-                "layout": {},
-                "paint": {
-                    "fill-color": "red",
-                    "fill-opacity": .2
-                },
-                "filter": ["==", "name", ""]
-            });
-            map.on("mousemove", "blockGroup", function(e) {
-                map.setFilter("bg-hover", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-            });
-            map.on("mouseleave", "blockGroup", function() {
-                map.setFilter("bg-hover", ["==",  "AFFGEOID",""]);
-            });
+    map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
+    map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
+    map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);                    
+//    
+   // map.addSource('blockGroupGeojson',{
+   //     type: 'vector',
+   //     url: 'mapbox://jjjiia123.7yrvmr7f'
+   // })
+   // map.addLayer({
+   //     'id': 'blockGroup',
+   //     'type': 'fill',
+   //     'maxzoom':22,
+   //     'minzoom':0,
+   //     'source': "blockGroupGeojson",        
+   //     "layout":{},
+   //     "paint":{
+   //     'fill-outline-color':'rgba(0,0,200, 0)',
+   //     'fill-color': 'rgba(0,0,0, .05)'
+   //     }
+   // })
+   // map.addLayer({
+   //         "id": "bg-highlighted",
+   //         "type": "fill",
+   //         "source": "blockGroupGeojson",
+   //         "paint": {
+   //             "fill-outline-color": "rgba(0,0,0,.5)",
+   //             "fill-color": "rgba(255,255,255,.8)",
+   //         },
+   //         "filter": ["in", "FIPS", ""]
+   //     })
+   //     map.addLayer({
+   //         "id": "bg-hover-highlight",
+   //             "type": "fill",
+   //         "source": "blockGroupGeojson",
+   //             "layout": {},
+   //             "paint": {
+   //                 "fill-color": "red",
+   //                 "fill-opacity": .6
+   //             },
+   //             "filter": ["==", "name", ""]
+   //         });
+   //     map.addLayer({
+   //         "id": "bg-hover",
+   //             "type": "fill",
+   //         "source": "blockGroupGeojson",
+   //             "layout": {},
+   //             "paint": {
+   //                 "fill-color": "red",
+   //                 "fill-opacity": .2
+   //             },
+   //             "filter": ["==", "name", ""]
+   //         });
+           // map.on("mousemove", "blockGroup", function(e) {
+           //     map.setFilter("bg-hover", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
+           // });
+           // map.on("mouseleave", "blockGroup", function() {
+           //     map.setFilter("bg-hover", ["==",  "AFFGEOID",""]);
+           // });
             
             map.on("mousemove", "bg-highlighted", function(e) {
                     map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
