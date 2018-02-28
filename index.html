@@ -36,7 +36,18 @@
 	<link rel="stylesheet" href="static/bootstrap-3.1.1-dist/css/bootstrap.min.css">
 	<script src="static/javascripts/jquery-ui.min.js"></script>
 	<script src="static/javascripts/tooltip.js"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v3.1.1/mapbox-gl-directions.js'></script>
+<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v3.1.1/mapbox-gl-directions.css' type='text/css' />
 <style>
+  .directions-icon-arrive {
+    background-color:#aaa;
+    border:1px solid white;
+  }
+  .directions-icon-depart{
+    background-color:#aaa;
+    border:1px solid white;
+    
+  }
   body{
   }
   #map{
@@ -84,7 +95,7 @@
     z-index:2;
     position:absolute;
     top:10px;
-    left:260px;
+    left:320px;
     background-color:white;
     border:2px solid #dedede;
     padding:10px;

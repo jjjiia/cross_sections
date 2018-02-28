@@ -11,6 +11,7 @@ var colors = ["#dd8d64","#4bf094","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f
 
 function dataDidLoad(error,censusData){
     var formatted = convertDataToDict(censusData)
+    console.log(formatted)
     var newYork = [-73.9,40.7127837]
     var boston = [-71.043787,42.361212]
     mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
@@ -21,80 +22,97 @@ function dataDidLoad(error,censusData){
         zoom:11
     });
     map["dragPan"].disable()
+
+    var directions = new MapboxDirections({
+      accessToken: mapboxgl.accessToken,
+      steps: false,
+      geometries: 'polyline',
+      controls: {instructions: false}
+    });
+    map.addControl( directions, 'top-left');
     
-//    map["dragPan"].disable()
-    map.addControl(new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken
-    }), "top-left");
-   // map.addControl(new mapboxgl.NavigationControl(),"top-left");
     map.on('load', function() {
-        d3.select("#mapboxgl-ctrl-bottom-right").remove()
-        d3.select("#toggle").on("click",function(){
-            if(pan == true){
-                console.log(pan)
-                d3.select("#toggle").html("Enable Panning")
-                map["dragPan"].disable()
-                pan = false
-            }
-            else if(pan == false){
-                console.log(pan)
-                d3.select("#toggle").html("Enable Drawing")
-                map["dragPan"].enable()
-                pan=true
-            }
-        })
-        
-        
-        
-        addPolygons(map)
-        var featureList = []
-        var mouseList = []
-        var canvas = map.getCanvasContainer()
-        var down = false;
-        $(document).mousedown(function() {
-            down = true;
-        }).mouseup(function() {
-            down = false;  
-        });
-        map.on('mouseup',function(){
-            lineCount+=1
-            //$('html,body').css('cursor','default');
-          
-           var filteredFeatures = []
-            for(var g in featureList){
-                    var gid = featureList[g].properties.AFFGEOID.replace("1500000US","15000US")
-                if(formatted[gid]!=undefined && formatted[gid]!=0){
-                    filteredFeatures.push(featureList[g])
-                }
-            }
-          
-            if(featureList.length>3){
-                var geoIds = []
-                var filter = filteredFeatures.reduce(function(memo, feature) {
-                        memo.push(feature.properties["AFFGEOID"]);
-                        
-                        geoIds.push(feature.properties["AFFGEOID"])
-                        return memo;
-                    }, ['in', "AFFGEOID"]);
-                map.setFilter("bg-highlighted", filter);              
-                drawPath(formatted,geoIds,map)
-                drawMouse(mouseList,map)
-            } 
-        featureList = []
-        mouseList = []
-        })
-         map.on('mousemove', function (e) {
-             if(down!=false){
-                $('html,body').css('cursor','crosshair');
-                 var geoids = []
-                 getFeatures(e,map,featureList)
-                 recordMouse(map,mouseList,e)
-             }
-         })
+        map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
+        map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
+        map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);      
+        getDirectionsData(directions,map,formatted)
+
+ 
     })
 }
-function drawMouse(mouseList,map){
-    //console.log(mouseList)
+
+function getDirectionsData(directions,map,formattedCensus){
+    
+ 
+    directions.on('route', function (ev) {
+        lineCount+=1
+        var directionsPath = []
+        var directionsXY = []
+        console.log(lineCount)
+        var data = ev.route[0]["legs"][0]["steps"]
+        for(var i in data){
+            var intersections = data[i]["intersections"]
+            for(var j in intersections){
+                //console.log(intersections[j]["location"])
+                var xy = map.project(intersections[j]["location"])
+                directionsXY.push(xy)
+                directionsPath.push(intersections[j]["location"])
+            }
+        }
+        
+        var morePoints = addPointsForSmoothing(directionsPath)
+        drawDirections(morePoints,map)
+        
+ //       drawDirections(directionsPath,map)
+        
+        var geoids = []
+        var featureList = []
+        for(var k in directionsXY){
+            var dxy = directionsXY[k]
+            var features = map.queryRenderedFeatures(dxy,{layers:["blockGroup"]});
+            var feature = features[0]
+            if(feature!=undefined){
+                var geoid = feature.properties["AFFGEOID"]//.replace("1500000US","15000US")
+                if(geoids.indexOf(geoid)==-1){
+                    geoids.push(geoid)
+                    featureList.push(feature)
+                }
+            }
+        }
+        
+        addPolygons(map,geoids)
+        drawPath(formattedCensus,geoids,map)
+    })
+}
+
+function addPointsForSmoothing(directionsPath){
+    
+    var morePoints = []
+    for(var i in directionsPath){
+        if(i<directionsPath.length-1){
+            var coords1 = directionsPath[i]
+            var coords2 = directionsPath[parseInt(i)+1]
+            morePoints.push(coords1)
+            
+            var lat1 = coords1[1]
+            var lng1 = coords1[0]
+            var lat2 = coords2[1]
+            var lng2 = coords1[0]
+            var per = .5
+            var newCoords = midpoint(lat1, lng1, lat2, lng2, per)
+            
+            console.log(newCoords)
+            morePoints.push(newCoords)
+        }
+    }
+    return morePoints
+}
+
+function midpoint(lat1, lng1, lat2, lng2, per) {
+     return [lng1 + (lng2 - lng1) * per, lat1 + (lat2 - lat1) * per];
+}
+
+function drawDirections(mouseList,map){   
     map.addLayer({
     "id": "mouse_"+lineCount,
             "type": "line",
@@ -114,8 +132,9 @@ function drawMouse(mouseList,map){
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": "#000",
-                "line-width": 1
+                "line-color":  colors[lineCount%(colors.length-1)],
+                "line-opacity":.5,
+                "line-width": 4
             }
     })
     var start = mouseList[0]
@@ -156,20 +175,21 @@ function drawMouse(mouseList,map){
             "filter": ["==", "$type", "Point"],
         });
     map.addLayer({
-    "id":"start_label_"+lineCount,
-    "type":"symbol",
-    "source": "points_"+lineCount,
-    "layout":{
-        "text-field":"{title}",
-        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-        "text-offset": [0, 0.6],
-        "text-anchor": "top",
-    },
-    "paint":{
-        "text-color":colors[lineCount%(colors.length-1)]
-    }
-})
+        "id":"start_label_"+lineCount,
+        "type":"symbol",
+        "source": "points_"+lineCount,
+        "layout":{
+            "text-field":"{title}",
+            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+            "text-offset": [0, 0.6],
+            "text-anchor": "top",
+        },
+        "paint":{
+            "text-color":colors[lineCount%(colors.length-1)]
+        }
+    })
 }
+
 function recordMouse(map,mouseList,e){
     mouseList.push([e.lngLat.lng,e.lngLat.lat])
     return mouseList
@@ -274,15 +294,21 @@ function drawPath(data,geoids,map){
 }
 
 function drawChart(distances,data,geoids,column,map){
-    map.on('click', 'blockgroup', function (e) {
-           new mapboxgl.Popup()
-               .setLngLat(e.lngLat)
-               .setHTML(e.features[0].properties.name)
-               .addTo(map);
-               console.log(e)
-       });
     
-//    d3.selectAll("#charts svg").remove()
+           var height = $('#charts').height();
+           if($(this).is(':visible')){
+               $("#charts").scrollTo(height);
+           }
+    
+    //    map.on('click', 'blockgroup', function (e) {
+    //           new mapboxgl.Popup()
+    //               .setLngLat(e.lngLat)
+    //               .setHTML(e.features[0].properties.name)
+    //               .addTo(map);
+    //               console.log(e)
+    //       });
+    
+    //    d3.selectAll("#charts svg").remove()
     var margin = 30
     var height = 80
     var width = 250
@@ -435,7 +461,8 @@ function convertDataToDict(censusData){
     return formatted
 }
 function getFeatures(e,map,featureList){
-      var features = map.queryRenderedFeatures(e.point,{layers:["blockGroup"]});
+     console.log(e)
+    var features = map.queryRenderedFeatures(e.point,{layers:["blockGroup"]});
      // console.log(features)
       var geoids=[]
       for(var f in featureList){
@@ -456,27 +483,10 @@ function getFeatures(e,map,featureList){
         //}
         return featureList
 }
-function addPolygons(map){
-  
-    
-    
-    map.addSource('blockGroupGeojson',{
-        "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/cross_sections/master/newYorkStateBG.geojson'
-    })
-    map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
-    map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
-    map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);                    
-    map.on("mousemove", "bg-highlighted", function(e) {
-                        map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-                        var formattedId = e.features[0].properties[ "AFFGEOID"].replace("1500000US","15000US")
-                        d3.selectAll(".rollover_"+ formattedId).attr("opacity",.6)
-                    });
+function addPolygons(map,geoids){
+    var filter = ["in","AFFGEOID"].concat(geoids)
+    map.setFilter("bg-hover-highlight", filter);                    
+   // map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
+//    map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);                    
 
-                    // Reset the state-fills-hover layer's filter when the mouse leaves the layer.
-                map.on("mouseleave", "bg-highlighted", function() {
-                    map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
-                    d3.selectAll(".rollover").attr("opacity",0)
-                });
-   
-    }
+}
