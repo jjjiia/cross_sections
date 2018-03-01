@@ -33,8 +33,8 @@ function dataDidLoad(error,censusData){
     
     map.on('load', function() {
         
-    //    var layers =map.getStyle().layers
-    //    console.log(layers)
+        var layers =map.getStyle().layers
+        console.log(layers)
     //    for(var l in layers){
     //        var layerName = layers[l].id
     //        if(layerName.split("-")[0]=="directions"){
@@ -42,11 +42,26 @@ function dataDidLoad(error,censusData){
     //            
     //        }
     //    }
-        map.setFilter( "directions-route-line-alt", ["==", "AFFGEOID", ""]);  
-        map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
-        map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
-        map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);      
-        getDirectionsData(directions,map,formatted)
+    map.setPaintProperty("directions-origin-point","circle-color","#aaaaaa")
+    map.setPaintProperty("directions-origin-point","circle-radius",10)
+    map.setPaintProperty("directions-destination-point","circle-color","#aaaaaa")
+    map.setPaintProperty("directions-destination-point","circle-radius",10)
+    
+    map.setPaintProperty("directions-route-line","line-color","#aaaaaa")
+    map.setPaintProperty("directions-route-line","line-opacity",.5)
+    map.setPaintProperty("directions-route-line","line-width",8)
+    
+    map.setFilter( "directions-route-line-alt", ["==", "AFFGEOID", ""]);  
+
+    map.setFilter( "directions-hover-point-casing", ["==", "AFFGEOID", ""]);  
+    map.setFilter( "directions-hover-point", ["==", "AFFGEOID", ""]); 
+    map.setFilter( "directions-waypoint-point", ["==", "AFFGEOID", ""]); 
+    
+    map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
+    map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
+    map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);      
+    map.setFilter("tracts", ["==", "AFFGEOID", ""]);                    
+    getDirectionsData(directions,map,formatted)
 
  
     })
@@ -56,7 +71,6 @@ function getDirectionsData(directions,map,formattedCensus){
     
  
     directions.on('route', function (ev) {
-        
         lineCount+=1
         var directionsPath = []
         var directionsXY = []
@@ -71,10 +85,11 @@ function getDirectionsData(directions,map,formattedCensus){
             }
         }
         
-        var morePoints = addPointsForSmoothing(directionsPath)
-        drawDirections(morePoints,map)
-        
- //       drawDirections(directionsPath,map)
+     //   var morePoints = addPointsForSmoothing(directionsPath)
+   //     drawDirections(morePoints,map)
+
+  
+       drawDirections(directionsPath,map)
         
         var geoids = []
         var featureList = []
@@ -109,19 +124,19 @@ function addPointsForSmoothing(directionsPath){
             var lng1 = coords1[0]
             var lat2 = coords2[1]
             var lng2 = coords1[0]
-            var newCoords1 = midpoint(lat1, lng1, lat2, lng2, .2)
-            var newCoords2 = midpoint(lat1, lng1, lat2, lng2, .4)
-            var newCoords3 = midpoint(lat1, lng1, lat2, lng2, .6)
-            var newCoords4 = midpoint(lat1, lng1, lat2, lng2, .8)
+            var newCoords1 = midpoint(lat1, lng1, lat2, lng2, .5)
+          //  var newCoords2 = midpoint(lat1, lng1, lat2, lng2, .4)
+          //  var newCoords3 = midpoint(lat1, lng1, lat2, lng2, .6)
+          //  var newCoords4 = midpoint(lat1, lng1, lat2, lng2, .8)
             
          //   console.log(newCoords)
             morePoints.push(newCoords1)
-            morePoints.push(newCoords2)
-            morePoints.push(newCoords3)
-            morePoints.push(newCoords4)
+           // morePoints.push(newCoords2)
+           // morePoints.push(newCoords3)
+           // morePoints.push(newCoords4)
         }
     }
-    console.log(morePoints.length)
+ //   console.log(morePoints.length)
     return morePoints
 }
 
@@ -150,7 +165,7 @@ function drawDirections(mouseList,map){
             },
             "paint": {
                 "line-color":  colors[lineCount%(colors.length-1)],
-                "line-opacity":.5,
+                "line-opacity":.4,
                 "line-width": 4
             }
     })
@@ -205,6 +220,7 @@ function drawDirections(mouseList,map){
             "text-color":colors[lineCount%(colors.length-1)]
         }
     })
+    
 }
 
 function recordMouse(map,mouseList,e){
@@ -303,7 +319,7 @@ function drawPath(data,geoids,map){
             "type": "circle",
             "source": "centroids_"+lineCount,
             "paint": {
-                "circle-radius": 2,
+                "circle-radius": 4,
                 "circle-color": colors[lineCount%(colors.length-1)],
             },
             "filter": ["==", "$type", "Point"],
@@ -502,7 +518,11 @@ function getFeatures(e,map,featureList){
 }
 function addPolygons(map,geoids){
     var filter = ["in","AFFGEOID"].concat(geoids)
-    map.setFilter("bg-hover-highlight", filter);                    
+
+    map.setFilter("bg-hover-highlight", filter);           
+  //  map.setPaintProperty("bg-hover-highlight","fill-color",colors[lineCount%(colors.length-1)])
+  //  map.setPaintProperty("bg-hover-highlight","fill-opacity",.3)
+  //      
    // map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
 //    map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);                    
 
