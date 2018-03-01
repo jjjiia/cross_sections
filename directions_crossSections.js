@@ -11,7 +11,7 @@ var colors = ["#dd8d64","#4bf094","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f
 
 function dataDidLoad(error,censusData){
     var formatted = convertDataToDict(censusData)
-    console.log(formatted)
+ //   console.log(formatted)
     var newYork = [-73.9,40.7127837]
     var boston = [-71.043787,42.361212]
     mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
@@ -32,6 +32,17 @@ function dataDidLoad(error,censusData){
     map.addControl( directions, 'top-left');
     
     map.on('load', function() {
+        
+    //    var layers =map.getStyle().layers
+    //    console.log(layers)
+    //    for(var l in layers){
+    //        var layerName = layers[l].id
+    //        if(layerName.split("-")[0]=="directions"){
+    //             map.setFilter(layerName, ["==", "AFFGEOID", ""]);                    
+    //            
+    //        }
+    //    }
+        map.setFilter( "directions-route-line-alt", ["==", "AFFGEOID", ""]);  
         map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
         map.setFilter("bg-highlighted", ["==", "AFFGEOID", ""]);                    
         map.setFilter("bg-hover", ["==", "AFFGEOID", ""]);      
@@ -45,10 +56,10 @@ function getDirectionsData(directions,map,formattedCensus){
     
  
     directions.on('route', function (ev) {
+        
         lineCount+=1
         var directionsPath = []
         var directionsXY = []
-        console.log(lineCount)
         var data = ev.route[0]["legs"][0]["steps"]
         for(var i in data){
             var intersections = data[i]["intersections"]
@@ -98,13 +109,19 @@ function addPointsForSmoothing(directionsPath){
             var lng1 = coords1[0]
             var lat2 = coords2[1]
             var lng2 = coords1[0]
-            var per = .5
-            var newCoords = midpoint(lat1, lng1, lat2, lng2, per)
+            var newCoords1 = midpoint(lat1, lng1, lat2, lng2, .2)
+            var newCoords2 = midpoint(lat1, lng1, lat2, lng2, .4)
+            var newCoords3 = midpoint(lat1, lng1, lat2, lng2, .6)
+            var newCoords4 = midpoint(lat1, lng1, lat2, lng2, .8)
             
-            console.log(newCoords)
-            morePoints.push(newCoords)
+         //   console.log(newCoords)
+            morePoints.push(newCoords1)
+            morePoints.push(newCoords2)
+            morePoints.push(newCoords3)
+            morePoints.push(newCoords4)
         }
     }
+    console.log(morePoints.length)
     return morePoints
 }
 
