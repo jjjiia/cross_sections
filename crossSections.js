@@ -44,6 +44,7 @@ function dataDidLoad(error,censusData){
             }
         })
         
+        map.setFilter("tracts", ["==", "AFFGEOID", ""]);                    
         
         
         addPolygons(map)
