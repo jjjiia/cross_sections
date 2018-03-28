@@ -49,7 +49,19 @@
   .directions-icon-depart{
     background-color:#aaa;
     border:1px solid white;
-    
+  }
+  .tabs{
+    position:absolute;
+    top:100px;
+    transform: 
+        translate(25px, 51px)
+        rotate(315deg);
+      width: 30px;
+  }
+  .chart{
+    font-size:12px;
+    font-weight:bold;
+    color:#000000;
   }
   body{
   }
@@ -68,22 +80,59 @@
   }
   #charts{
     position:fixed;
-    right:10px;
-    padding:20px;
-    top:10px;
-    background-color:rgba(255,255,255,.8);
-    border:2px solid #dedede;
-    width:400px;
-    overflow:auto;
-    max-height:80%;
+   right:0px;
+   width:30%;
+    padding:5px;
+    top:145px;
+    background-color:rgba(255,255,255,.7);
     cursor:pointer;
-    border-radius:4px;
+    z-index:999;
   }
+  .panel{
+    position:absolute;
+    right:0px;
+    top:0px;
+  }
+  .mapboxgl-ctrl-geocoder input[type='text']{
+    height:25px;
+  }
+  .mapbox-form-label .directions-icon{
+    height:25px;
+    width:25px;
+    color:#000000;
+  }
+  .mapbox-directions-origin .mapbox-form-label{
+    height:25px;
+    width:25px;
+    padding:0px;
+  }
+   .mapbox-directions-destination .mapbox-form-label{
+     height:25px;
+     width:25px;
+     padding:0px;
+   }
   .mapbox-gl-draw_ctrl-draw > button {
     border-color:rgba(0,0,0,0.9);
     color:rgba(255,255,255,0.5);
     width:30px;
     height:30px;
+  }
+  .directions-icon{
+    vertical-align:top;
+  }
+  .mapbox-directions-component-keyline {
+      box-shadow: none;
+      border-radius: 3px;
+  }
+  .mapbox-directions-profile{
+    background:rgba(0,0,0,0);
+    border:none;
+  }
+  .mapboxgl-ctrl-geocoder .geocoder-pin-right{
+    top:0px;
+  }
+  .mapbox-directions-profile label{
+   padding:2px;
   }
   .d3-tip {
     line-height: 1;
@@ -93,6 +142,7 @@
     border:1px solid black;
     border-radius: 4px;
     font-size: 12px;
+    z-index:999999;
   }
   #toggle{
     z-index:2;
@@ -106,14 +156,52 @@
     font-size:12px;
     color:rgba(0,0,0,.5);
   }
+.mapboxgl-ctrl-scale{
+  border:1px solid black;
+  padding:0px;
+  padding-left:3px;
+}
+#zoom{
+  position:absolute;
+  bottom:180px;
+  left:10px;
+  font-size:11px;
+  width:80px;
+}
+#panelSelection{
+  position:absolute;
+  top:90px;
+  width:30%;
+  right:0px;
+  height:60px;
+  padding:10px;
+}
+.mapboxgl-ctrl-group button{
+  border:1px solid black;
+  border-radius:2px;
+}
+#initial{
+  position:absolute;
+  left:200px;
+  top:100px;
+  padding:20px;
+  font-size:24px;
+  background-color:rgba(255,255,255,.7);
+  color:#4bf094;
+}
+
 </style>
 </head>
 <body>
 
 <div id='map'></div>
 <div id='features'></div>
+<div id="panelSelection">Routes:<br/></div>
 <div id='charts'></div>
+<div id='initial'>Here is my daily commute from Jackson Heights <br/>to the West Village in New York City. 
+  <br/><br/>
+  How does yours look?</div>
 <script src="directions_crossSections.js"></script>
-
+<div id= "zoom"></div>
 </body>
 </html>
