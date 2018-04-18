@@ -8,33 +8,36 @@
 //https://www.mapbox.com/mapbox-gl-js/example/polygon-popup-on-click/
 $(function() {
   	queue()
-      .defer(d3.csv,"data/data_county_with_centroids.csv")
-    .defer(d3.csv,"data/data_tract_with_centroids.csv")
-    .defer(d3.csv,"data/data_blockgroup_with_centroids.csv")
+  //    .defer(d3.csv,"data/data_county_with_centroids.csv")
+//    .defer(d3.csv,"data/data_tract_with_centroids.csv")
+  //  .defer(d3.csv,"data/data_blockgroup_with_centroids.csv")
       .defer(d3.json,"data/dataDictionary_2.json")
       .await(dataDidLoad);
   })
 var  panelZ = 100
 var currentCategory = "SE_T057_001"
 var lineCount = 0
-var colors = ["#4bf094","#dd8d64","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f32","#d64728","#37a6a8","#d26140","#339762","#46a78d","#8de3be"]
+var colors = ["#2178a3","#dd8d64","#e7b02c","#50a633","#1bcb78","#e28327","#4f7f32","#d64728","#37a6a8","#d26140","#339762","#46a78d","#8de3be"]
     var  pan =false
 var dataDictionary = null
-var tractFormatted =null
-var countyFormatted =null
-var blockgroupFormatted =null
+  var tractsMax=10
+  var tractsMin=8
+  var countiesMax=8
+//var tractFormatted =null
+//var countyFormatted =null
+//var blockgroupFormatted =null
 var valueCategories = ["T012_001","T012_002","T012_003","T057_001"]//not percents 
-function dataDidLoad(error,county,tract,blockgroup,dataDictionaryFile){
-    tractFormatted = convertDataToDict(tract)
-    countyFormatted = convertDataToDict(county)
-    blockgroupFormatted = convertDataToDict(blockgroup)
+function dataDidLoad(error,dataDictionaryFile){
+    //tractFormatted = convertDataToDict(tract)
+    //countyFormatted = convertDataToDict(county)
+    //blockgroupFormatted = convertDataToDict(blockgroup)
     dataDictionary = dataDictionaryFile
 
    mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdkrxmwl008v2to3t0e8g0k0',
-        center: [-73.9,40.729],
+        center: [-73.95,40.729],
         zoom:12,
         minZoom:3
     });
@@ -49,28 +52,35 @@ function dataDidLoad(error,county,tract,blockgroup,dataDictionaryFile){
     
     map.on("move",function(){
         var zoomLevel = Math.round(map.getZoom()*100)/100
-        if(zoomLevel<5){
+        if(zoomLevel<countiesMax){
             d3.select("#zoom").html("counties are queried at zoom level "+zoomLevel)
-        }else if(zoomLevel >5 && zoomLevel<8){            
+        }else if(zoomLevel >tractsMin && zoomLevel<tractsMax){            
             d3.select("#zoom").html("tracts are queried at zoom level "+zoomLevel)
         }else{
             d3.select("#zoom").html("blockgroups are queried at zoom level "+zoomLevel)     
         }
     })    
-    map.addControl( directions, 'top-right');
+    map.addControl( directions, 'top-left');
     map.addControl(new mapboxgl.ScaleControl({maxWidth: 100,unit: 'imperial'}),"bottom-left"); 
     map.addControl(new mapboxgl.ScaleControl({maxWidth: 100,unit: 'metric'}),"bottom-left"); 
     map.addControl(new mapboxgl.NavigationControl(),"bottom-left");
     
     map.on('load', function() {
+       map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
+       map.setFilter("county-hover-highlight", ["==", "AFFGEOID", ""]);                                     
+       map.setFilter("tract-hover-highlight", ["==", "AFFGEOID", ""]); 
+       
+       // map.setFilter("tracts", ["==", "AFFGEOID", ""]); 
+       // map.setFilter("blockgroups", ["==", "AFFGEOID", ""]);                    
+       // map.setFilter("counties", ["==", "AFFGEOID", ""]);   
+       d3.select("#initial").transition().duration(2000).delay(3000).style("opacity",0).remove()
         
         setInitialRoute(map)
         
-        
         var zoomLevel = Math.round(map.getZoom()*100)/100
-        if(zoomLevel<5){
+        if(zoomLevel<countiesMax){
             d3.select("#zoom").html("counties are queried at zoom level "+zoomLevel)
-        }else if(zoomLevel >5 && zoomLevel<8){            
+        }else if(zoomLevel >tractsMin && zoomLevel<tractsMax){            
             d3.select("#zoom").html("tracts are queried at zoom level "+zoomLevel)
         }else{
             d3.select("#zoom").html("blockgroups are queried at zoom level "+zoomLevel)     
@@ -92,9 +102,7 @@ function dataDidLoad(error,county,tract,blockgroup,dataDictionaryFile){
         map.setFilter( "directions-hover-point-casing", ["==", "AFFGEOID", ""]);  
         map.setFilter( "directions-hover-point", ["==", "AFFGEOID", ""]); 
         map.setFilter( "directions-waypoint-point", ["==", "AFFGEOID", ""]); 
-        map.setFilter("bg-hover-highlight", ["==", "AFFGEOID", ""]);                    
-        map.setFilter("county-hover-highlight", ["==", "AFFGEOID", ""]);                    
-        map.setFilter("tract-hover-highlight", ["==", "AFFGEOID", ""]);                    
+                           
                       
         getDirectionsData(directions,map)
     })
@@ -108,38 +116,41 @@ function setInitialRoute(map){
     var geoids = []
     var featureList = []
     var zoomLevel = map.getZoom()
+        path = addPointsForSmoothing(path)
     
+   // console.log(path)
     for(var k in path){        
-        var dxy = map.project(path[k])
-        if(zoomLevel<5){
-            var features = map.queryRenderedFeatures(dxy,{layers:["counties"]});
-            var formattedCensus =  countyFormatted
-        }else if(zoomLevel >5 && zoomLevel<8){
-            var features = map.queryRenderedFeatures(dxy,{layers:["tracts"]});
-             var formattedCensus =  tractFormatted
-        }else{
-            var features = map.queryRenderedFeatures(dxy,{layers:["blockgroups"]});
-             var formattedCensus = blockgroupFormatted
-        }
-        var feature = features[0]
-        if(feature!=undefined){
-            var geoid = feature.properties["AFFGEOID"]//.replace("1500000US","15000US")
-            if(geoids.indexOf(geoid)==-1){
-                geoids.push(geoid)
-                featureList.push(feature)
+        var e = map.project(path[k])
+        //console.log(e)
+        var bbox = [[e.x - 10, e.y - 10], [e.x + 10, e.y + 10]];
+        var features = map.queryRenderedFeatures(bbox,{layers:["blockgroups"]});        
+            // var formattedCensus = blockgroupFormatted
+       // var feature = features[0]
+        
+        
+        if(features!=undefined){
+            for(var f in features){
+                var feature = features[f]
+                var geoid = feature.properties["AFFGEOID"]//.replace("1500000US","15000US")
+                if(geoids.indexOf(geoid)==-1){
+                    geoids.push(geoid)
+                    featureList.push(feature)
+                }
             }
+           
         }
     }
+      //  console.log(geoids)
 
   //  addPolygons(map,geoids)
-    drawPath(formattedCensus,geoids,map,map.getZoom())
+    getPathDataFromFile(geoids,map,map.getZoom())
+//    drawPath(geoids,map,map.getZoom())
 }
 function getDirectionsData(directions,map){
     directions.on('route', function (ev) {
     
         d3.select("#initial").remove()
         
-        var zoomLevel = map.getZoom()
         lineCount+=1
         var directionsPath = []
         var directionsXY = []
@@ -153,47 +164,50 @@ function getDirectionsData(directions,map){
                 directionsPath.push(intersections[j]["location"])
             }
         }
+     //   directionsPath = addPointsForSmoothing(directionsPath)
         var bounds = directionsPath.reduce(function(bounds, coord) {
                   return bounds.extend(coord);
               }, new mapboxgl.LngLatBounds(directionsPath[0], directionsPath[0]));
 
       map.fitBounds(bounds, {
-          padding: 200
-          
-         
+          padding: 200         
       });
       map.on("moveend",function(){
           console.log("moveend")
-      })
-    
+        var zoomLevel = map.getZoom()
         
+         })
+        var zoomLevel = map.getZoom()
+      
        drawDirections(directionsPath,map)
         var geoids = []
         var featureList = []
+         
         for(var k in directionsXY){
-            var dxy = directionsXY[k]
-            if(zoomLevel<5){
-                var features = map.queryRenderedFeatures(dxy,{layers:["counties"]});
-                var formattedCensus =  countyFormatted
-            }else if(zoomLevel >5 && zoomLevel<8){
-                var features = map.queryRenderedFeatures(dxy,{layers:["tracts"]});
-                 var formattedCensus =  tractFormatted
+            var e = directionsXY[k]
+            var bbox = [[e.x - 10, e.y - 10], [e.x + 10, e.y + 10]];
+            if(zoomLevel<countiesMax){
+                var features = map.queryRenderedFeatures(bbox,{layers:["counties"]});
+               // var formattedCensus =  countyFormatted
+            }else if(zoomLevel >tractsMin && zoomLevel<tractsMax){
+                var features = map.queryRenderedFeatures(bbox,{layers:["tracts"]});
             }else{
-                var features = map.queryRenderedFeatures(dxy,{layers:["blockgroups"]});
-                 var formattedCensus = blockgroupFormatted
+                var features = map.queryRenderedFeatures(bbox,{layers:["blockgroups"]});
             }
-            var feature = features[0]
-            if(feature!=undefined){
-                var geoid = feature.properties["AFFGEOID"]//.replace("1500000US","15000US")
-                if(geoids.indexOf(geoid)==-1){
-                    geoids.push(geoid)
-                    featureList.push(feature)
+           // var feature = features[0]
+            if(features!=undefined){
+                for(var f in features){
+                    var feature = features[f]
+                    var geoid = feature.properties["AFFGEOID"]//.replace("1500000US","15000US")
+                    if(geoids.indexOf(geoid)==-1){
+                        geoids.push(geoid)
+                        featureList.push(feature)
+                    }
                 }
             }
         }
-
-      //  addPolygons(map,geoids)
-        drawPath(formattedCensus,geoids,map,map.getZoom())
+      
+            getPathDataFromFile(geoids,map,map.getZoom())
     })
 }
 
@@ -330,6 +344,9 @@ function getDistance(lat1, lon1, lat2, lon2, unit) {
 function getDistances(pathDataId){
     var totalDistance = 0
     var distanceDictionary = {}
+    
+    console.log(pathDataId)
+    
     for(var i =0; i <pathDataId.length-1; i++){
         
         if(i<pathDataId.length){
@@ -344,15 +361,71 @@ function getDistances(pathDataId){
             distanceDictionary[gid2]=totalDistance
         }
     }
+    
+  //  console.log(pathDataId)
+    
     distanceDictionary[pathDataId[0][0]]=0
     distanceDictionary["total"]=totalDistance
     return distanceDictionary
 }
-function drawPath(data,geoids,map,drawnZoom){
+function getPathDataFromFile(geoids,map,drawnZoom){
+    var data = {}
+    
+    if(drawnZoom<countiesMax){
+        var root = "county"
+        var codeRoot = "05000US"
+    }else if(drawnZoom>tractsMin && drawnZoom <tractsMax){
+        var root = "tract"
+        var codeRoot = "14000US"
+    }else{
+        var root = "blockgroup"
+        var codeRoot = "15000US"
+    }
+    //    console.log(geoids)
+    
+    var q = queue()
+    
+    for(var k in geoids){
+       // console.log(geoids[k])
+        var fileName ="census_"+root+"/"+codeRoot+geoids[k].split("US")[1]+".json"
+        q = q.defer(d3.json, fileName)
+        //d3.json(fileName, function(json) {
+        //    data[geoids[k]]=json
+        //})
+    }
+    q.await(pathDataLoaded)
+    function pathDataLoaded(error){
+        if(!error){
+            var jsons = Array.prototype.slice.call(arguments, 1);
+            for(var i = 1; i<arguments.length; i++){
+                data[arguments[i]["Geo_GEOID"]]=arguments[i]
+            }
+        }
+     drawPath(geoids,map,data,drawnZoom)   
+    }
+    return data
+}
+function drawPath(geoids,map,data,drawnZoom){
+  //  console.log(data)
+    if(drawnZoom<countiesMax){
+        var filter = ["in","AFFGEOID"].concat(geoids)
+        map.setFilter("county-hover-highlight",filter);
+       // var geoName = data[d[0]]["Geo_NAME"]
+    }else if(drawnZoom >tractsMin && drawnZoom<tractsMax){            
+        var filter = ["in","AFFGEOID"].concat(geoids)
+        map.setFilter("tract-hover-highlight",filter);
+      //  var geoName = data[d[0]]["Geo_NAME"]
+    }else{
+        var filter = ["in","AFFGEOID"].concat(geoids)
+        map.setFilter("bg-hover-highlight", filter);
+        //var geoName = data[d[0]]["Geo_NAME"]
+    }
+    //var data = getPathDataFromFile(geoids,drawnZoom)
     var pathData = []
     var pathDataId = []
+    
     for(var g in geoids){
-            var gid = geoids[g].replace("00000US","000US")
+        var gid = geoids[g].replace("00000US","000US")
         if(data[gid]!=undefined && data[gid]!=0){
             var coords = [parseFloat(data[gid].lng),parseFloat(data[gid].lat)]
             pathData.push(coords)
@@ -367,7 +440,8 @@ function drawPath(data,geoids,map,drawnZoom){
     
     
     d3.select("#panelSelection").append("div").attr("class","icon_"+panel+" panelicon").style("width","20px").style("height","20px")
-    .style("border-radius","10px").style("margin","2px").style("background-color",colors[lineCount]).style("display","inline-block")
+    .style("border-radius","10px")
+    .style("margin","2px").style("background-color",colors[lineCount]).style("display","inline-block")
     .style("border","1px solid #ffffff")
     .style("cursor","pointer")
     .on("click",function(){
@@ -377,13 +451,15 @@ function drawPath(data,geoids,map,drawnZoom){
         d3.select(".icon_"+panel).style("border","1px solid #ffffff")
     })
     
-    var panelDiv = d3.select("#charts").append("div").attr("class",panel+" panel")
+    var panelDiv = d3.select("#charts").append("div").attr("class",panel+" panel")    
     .style("z-index", panelZ)//.style("top",lineCount*15+"px")
-    .style("border","1px solid "+colors[lineCount])
+   // .style("border","1px solid "+colors[lineCount])
     .style("background-color","rgba(255,255,255,.95)")
     .style("margin","5px")
+        .style("margin-left",lineCount*3+"px")
     
-d3.select("."+panel).append("div").html("&#10005").style("color",colors[lineCount]).style("font-size","20px")
+    
+d3.select("."+panel).append("div").html("&#10005").style("color",colors[lineCount]).style("font-size","40px")
         .style("float","right")
         .style("padding-right","5px")
         .attr("class",panel)
@@ -405,56 +481,57 @@ d3.select("."+panel).append("div").html("&#10005").style("color",colors[lineCoun
         drawChart(distances,data,geoids,k,map, dataDictionary,panel,drawnZoom)
     }
 
-    map.addLayer({
-    "id": "route_"+lineCount,
-            "type": "line",
-            "source": {
-                "type": "geojson",
-                "data": {
-                    "type": "Feature",
-                    "properties": {},
-                    "geometry": {
-                        "type": "LineString",
-                        "coordinates": pathData
-                    }
-                }
-            },
-            "layout": {
-                "line-join": "round",
-                "line-cap": "round"
-            },
-            "paint": {
-                "line-color": colors[lineCount%(colors.length-1)],
-                "line-width": 1
-            }
-    })
+   // map.addLayer({
+   // "id": "route_"+lineCount,
+   //         "type": "line",
+   //         "source": {
+   //             "type": "geojson",
+   //             "data": {
+   //                 "type": "Feature",
+   //                 "properties": {},
+   //                 "geometry": {
+   //                     "type": "LineString",
+   //                     "coordinates": pathData
+   //                 }
+   //             }
+   //         },
+   //         "layout": {
+   //             "line-join": "round",
+   //             "line-cap": "round"
+   //         },
+   //         "paint": {
+   //             "line-color": colors[lineCount%(colors.length-1)],
+   //             "line-width": 1
+   //         }
+   // })
     
     
-    var features = []
-    for(var i in pathData){
-        features.push({
-            "type":"Feature",
-            "geometry":{"type":"Point","coordinates":pathData[i]},
-            "properties":{"title":"centroid_"+lineCount+"_"+i}
-        })
-    }
-    var centroidsSource = {"type":"geojson","data":{"type":"FeatureCollection","features":features}}
-    //console.log(centroidsSource)
-    map.addSource('centroids_'+lineCount,centroidsSource)
-    
-    map.addLayer({
-            "id": "centroids_"+lineCount,
-            "type": "circle",
-            "source": "centroids_"+lineCount,
-            "paint": {
-                "circle-radius": 4,
-                "circle-color": colors[lineCount%(colors.length-1)],
-            },
-            "filter": ["==", "$type", "Point"],
-        });  
+   // var features = []
+   // for(var i in pathData){
+   //     features.push({
+   //         "type":"Feature",
+   //         "geometry":{"type":"Point","coordinates":pathData[i]},
+   //         "properties":{"title":"centroid_"+lineCount+"_"+i}
+   //     })
+   // }
+   // var centroidsSource = {"type":"geojson","data":{"type":"FeatureCollection","features":features}}
+   // //console.log(centroidsSource)
+   // map.addSource('centroids_'+lineCount,centroidsSource)
+   // 
+   // map.addLayer({
+   //         "id": "centroids_"+lineCount,
+   //         "type": "circle",
+   //         "source": "centroids_"+lineCount,
+   //         "paint": {
+   //             "circle-radius": 4,
+   //             "circle-color": "rgba(233,251,35,33)"//colors[lineCount%(colors.length-1)],
+   //         },
+   //         "filter": ["==", "$type", "Point"],
+   //     });  
 }
 
 function drawChart(distances,data,geoids,column,map,keys,panel,drawnZoom){    
+        
     d3.select("#mapbox-directions-destination-input .geocoder-icon geocoder-icon-search input").html("").style("width","100%")
     
     var height = $('#charts').height();
@@ -516,6 +593,8 @@ function drawChart(distances,data,geoids,column,map,keys,panel,drawnZoom){
         .y(function(d,i){
                 return y(d[1])
         })
+        .curve(d3.curveNatural);
+        
         g.append("path")
             .datum(filteredData)
             .attr("fill", "none")
@@ -558,33 +637,33 @@ function drawChart(distances,data,geoids,column,map,keys,panel,drawnZoom){
           })
           .attr('r',7)
           .on('mouseover', function(d){
-              if(drawnZoom<5){
-                  map.setFilter("county-hover-highlight", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
-                  var geoName = countyFormatted[d[0]]["Geo_NAME"]
-              }else if(drawnZoom >5 && drawnZoom<8){            
-                  map.setFilter("tract-hover-highlight", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
-                  var geoName = tractFormatted[d[0]]["Geo_NAME"]
-              }else{
-                  map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
-                  var geoName = blockgroupFormatted[d[0]]["Geo_NAME"]
-              }
-              tool_tip.html(geoName+"<br/>"+d[1])
+              //  if(drawnZoom<countiesMax){
+          //        map.setFilter("county", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
+          //        //var geoName = countyFormatted[d[0]]["Geo_NAME"]
+          //    }else if(drawnZoom >tractsMin && drawnZoom<tractsMax){            
+          //        map.setFilter("tract", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
+          //        //var geoName = tractFormatted[d[0]]["Geo_NAME"]
+          //    }else{
+          //        map.setFilter("blockgroups", ["==",  "AFFGEOID", d[0].replace("000US","00000US")]);
+          //        //var geoName = blockgroupFormatted[d[0]]["Geo_NAME"]
+          //    }
+          //   // tool_tip.html(geoName+"<br/>"+d[1])
+              tool_tip.html(d[1])
               tool_tip.show()
               d3.select(this).attr("opacity",.3)
           })
           .on('mouseout', function(d){
               d3.select(this).attr("opacity",0)
-              if(drawnZoom<5){
-                  map.setFilter("county-hover-highlight", ["==",  "AFFGEOID", ""]);
-              }else if(drawnZoom >5 && drawnZoom<8){            
-                  map.setFilter("tract-hover-highlight", ["==",  "AFFGEOID", ""]);
-              }else{
-                  map.setFilter("bg-hover-highlight", ["==",  "AFFGEOID", ""]);
-              }
+              //if(drawnZoom<countiesMax){
+              //    map.setFilter("countie", ["==",  "AFFGEOID", ""]);
+              //}else if(drawnZoom >tractsMin && drawnZoom<tractsMax){            
+              //    map.setFilter("tracts", ["==",  "AFFGEOID", ""]);
+              //}else{
+              //    map.setFilter("blockgroups", ["==",  "AFFGEOID", ""]);
+              //}
               tool_tip.hide()
           });
           
-    
         
      g.append("g")
           .call(d3.axisLeft(y).ticks(4))

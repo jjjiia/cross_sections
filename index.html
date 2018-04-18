@@ -14,7 +14,6 @@
     <meta charset='utf-8' />
     <title>crossSections.js</title>
     <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.2.0/mapbox-gl-geocoder.min.js'></script>
-    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.2.0/mapbox-gl-geocoder.css' type='text/css' />
     
     <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.0/mapbox-gl-draw.js'></script>
@@ -34,7 +33,6 @@
 	<script src="static/javascripts/jquery-ui.min.js"></script>
 	<link rel="stylesheet" href="static/stylesheets/jquery-ui.css" />
 	<link rel="stylesheet" href="static/bootstrap-3.1.1-dist/css/bootstrap.min.css">
-	<script src="static/javascripts/jquery-ui.min.js"></script>
 	<script src="static/javascripts/tooltip.js"></script>
 <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v3.1.1/mapbox-gl-directions.js'></script>
 <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v3.1.1/mapbox-gl-directions.css' type='text/css' />
@@ -66,10 +64,12 @@
   body{
   }
   #map{
-    position:absolute;
+    position:fixed;
     top:0px;
     height:100%;
-    width:100%;    
+    width:70%; 
+    left:30%;
+    border-left:1px solid black;
   }
   #features{
     position:absolute;
@@ -80,10 +80,10 @@
   }
   #charts{
     position:fixed;
-   right:0px;
+   left:0px;
    width:30%;
     padding:5px;
-    top:145px;
+    top:60px;
     background-color:rgba(255,255,255,.7);
     cursor:pointer;
     z-index:999;
@@ -164,17 +164,21 @@
 #zoom{
   position:absolute;
   bottom:180px;
-  left:10px;
+  left:30%;
   font-size:11px;
   width:80px;
+  padding:5px;
+  background-color:rgba(255,255,255,.5);
 }
 #panelSelection{
   position:absolute;
-  top:90px;
+  top:0px;
   width:30%;
-  right:0px;
+  left:0px;
   height:60px;
   padding:10px;
+  background-color:rgba(255,255,255,.7);
+  border-bottom:1px solid black;
 }
 .mapboxgl-ctrl-group button{
   border:1px solid black;
@@ -182,25 +186,47 @@
 }
 #initial{
   position:absolute;
-  left:200px;
-  top:100px;
+  left:40%;
+  top:130px;
   padding:20px;
-  font-size:24px;
+  font-size:30px;
   background-color:rgba(255,255,255,.7);
-  color:#4bf094;
+  color:#2178a3;
 }
-
+.mapboxgl-ctrl-top-left{
+  background-color:#fff;
+  border:1px solid black;
+  padding:5px;
+  margin:5px;
+}
+#heart{
+  position:fixed;
+  right:0px;
+  bottom:0px;
+  z-index:9999999;
+  padding:10px;
+}
 </style>
 </head>
 <body>
 
 <div id='map'></div>
 <div id='features'></div>
-<div id="panelSelection">Routes:<br/></div>
+<div id="panelSelection">All the routes you have made:<br/></div>
 <div id='charts'></div>
 <div id='initial'>Here is my daily commute from Jackson Heights <br/>to the West Village in New York City. 
   <br/><br/>
   How does yours look?</div>
+<div id="heart">
+ <a href="url">
+  <img src="heart.png" alt="information">
+</a>
+  <div>
+<script>
+  var width = $(window).innerWidth()
+  //console.log(width)
+//  d3.select("#map").style("width",width-200)
+</script>
 <script src="directions_crossSections.js"></script>
 <div id= "zoom"></div>
 </body>
